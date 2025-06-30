@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}历史数据趋势{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>历史数据趋势 (按场次)</h2>
+    <div class="d-flex align-items-center">
+        <label for="metric-selector" class="form-label me-2 mb-0">选择指标:</label>
+        <select id="metric-selector" class="form-select" style="width: 250px;">
+            {% for key, name in metrics.items() %}
+            <option value="{{ key }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div id="main-chart" style="width: 100%; height:600px;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const chartDom = document.getElementById('main-chart');
+    // 安全检查，如果页面上没有图表容器，则不执行任何操作
+    if (!chartDom) {
+        console.error("Chart container #main-chart not found.");
+        return;
+    }
+
+    const myChart = echarts.init(chartDom);
+    
+    // 使用 try-catch 保护 JSON 解析，防止后端数据问题导致整个页面JS崩溃
+    let chartData;
+    let metrics;
+    try {
+        chartData = JSON.parse('{{ chart_data|tojson|safe }}');
+        metrics = JSON.parse('{{ metrics|tojson|safe }}');
+    } catch (e) {
+        console.error("无法解析图表数据:", e);
+        myChart.showLoading({ text: '图表数据加载失败' });
+        return;
+    }
+
+    const selector = document.getElementById('metric-selector');
+
+    function updateChart(metricKey) {
+        const option = {
+            title: { 
+                text: metrics[metricKey] + ' 趋势' 
+            },
+            tooltip: { 
+                trigger: 'axis',
+                formatter: function (params) {
+                    let res = params[0].name + '<br/>';
+                    params.forEach(function (item) {
+                        res += item.marker + ' ' + item.seriesName + ' : ' + item.value + '<br/>';
+                    });
+                    return res;
+                }
+            },
+            xAxis: { 
+                type: 'category', 
+                data: chartData.labels,
+                axisLabel: {
+                   interval: 'auto', // 自动决定标签间隔，防止重叠
+                   rotate: 30       // 倾斜标签以容纳更多内容
+                }
+            },
+            yAxis: { 
+                type: 'value', 
+                name: metrics[metricKey] 
+            },
+            series: [{ 
+                name: metrics[metricKey], 
+                data: chartData[metricKey], 
+                type: 'line', 
+                smooth: true 
+            }],
+            dataZoom: [
+                { type: 'inside', start: 0, end: 100 }, 
+                { type: 'slider', start: 0, end: 100 }
+            ],
+            // 增加底部空间以容纳倾斜的X轴标签
+            grid: { 
+                left: '3%', 
+                right: '4%', 
+                bottom: '15%', 
+                containLabel: true 
+            }
+        };
+        // 使用 true 参数确保旧的配置被清除，避免残留
+        myChart.setOption(option, true);
+    }
+
+    // 检查从后端传来的数据是否有效
+    if (chartData && chartData.labels && chartData.labels.length > 0) {
+        
+        // 初始加载图表
+        updateChart(selector.value);
+        
+        // 为下拉选择框添加 'change' 事件监听
+        selector.addEventListener('change', function() { 
+            updateChart(this.value); 
+        });
+
+        // 【核心功能】为图表添加 'click' 事件监听器
+        myChart.on('click', function (params) {
+            // 确保点击的是数据系列的点
+            if (params.componentType === 'series' && params.dataIndex >= 0 && chartData.raw_info && chartData.raw_info[params.dataIndex]) {
+                const info = chartData.raw_info[params.dataIndex];
+                
+                // 构造跳转 URL
+                const redirectUrl = `{{ url_for('daily_review') }}?date=${info.date}&start_time=${encodeURIComponent(info.time)}`;
+                
+                // 执行跳转
+                window.location.href = redirectUrl;
+            }
+        });
+
+    } else {
+        // 如果没有数据，显示提示信息
+        myChart.showLoading({ text: '暂无历史数据' });
+    }
+    
+    // 监听窗口大小调整事件，使图表自适应
+    window.addEventListener('resize', function() { 
+        myChart.resize(); 
+    });
+});
+</script>
+{% endblock %}

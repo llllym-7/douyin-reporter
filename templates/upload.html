@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}上传数据{% endblock %}
+{% block content %}
+<h2>上传直播复盘截图</h2>
+<p class="text-muted">请选择直播对应的日期，并上传所有相关的复盘截图（建议按 `1.jpg`, `2.jpg`, `3.jpg`, `4.jpg` 命名）。系统会自动识别并合并数据。</p>
+<div class="card">
+    <div class="card-body">
+        <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="live_date" class="form-label">直播日期</label>
+                <input type="date" class="form-control" id="live_date" name="live_date" required>
+            </div>
+            <div class="mb-3">
+                <label for="images" class="form-label">复盘截图 (可多选)</label>
+                <input class="form-control" type="file" id="images" name="images" multiple required>
+            </div>
+            <button type="submit" class="btn btn-primary">上传并分析</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}每日数据复盘{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>每日数据复盘</h2>
+    <div class="d-flex align-items-center">
+        <!-- 清空按钮现在使用 data.id，更精确 -->
+        {% if data %}
+        <form action="{{ url_for('delete_data', entry_id=data.id) }}" method="post" onsubmit="return confirm('您确定要清空 {{date_str}} (开播于 {{data.live_start_time}}) 的数据吗？此操作不可撤销！');" class="me-3">
+            <button type="submit" class="btn btn-danger btn-sm">清空本场数据</button>
+        </form>
+        {% endif %}
+        <input type="text" id="date-picker" class="form-control" style="width: 150px;" placeholder="选择日期...">
+    </div>
+</div>
+
+<!-- 【新增】场次切换按钮组 -->
+{% if sessions_this_day and sessions_this_day|length > 1 %}
+<div class="mb-3">
+    <strong>场次切换:</strong>
+    <div class="btn-group" role="group">
+        {% for session in sessions_this_day %}
+            <a href="{{ url_for('daily_review', date=date_str, start_time=session.live_start_time) }}" 
+               class="btn btn-sm {% if session.live_start_time == selected_start_time %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                第 {{ loop.index }} 场 ({{ session.live_start_time }})
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+
+{% if data %}
+<!-- 指标展示部分，标题现在包含开播时间 -->
+<div class="card mb-4">
+    <div class="card-header"><h4>{{ date_str }} 核心指标 (开播时间: {{ data.live_start_time or 'N/A' }})</h4></div>
+    <div class="card-body"><div class="row text-center g-4"><div class="col-md-2 col-4"><h5>成交金额</h5><p class="fs-4 text-primary">¥{{ "%.2f"|format(data.gmv or 0) }}</p></div><div class="col-md-2 col-4"><h5>千次观看成交金额</h5><p class="fs-4 text-primary">¥{{ "%.2f"|format(data.gpm or 0) }}</p></div><div class="col-md-2 col-4"><h5>成交件数</h5><p class="fs-4">{{ data.order_count or 0 }}</p></div><div class="col-md-2 col-4"><h5>成交人数</h5><p class="fs-4">{{ data.buyer_count or 0 }}</p></div><div class="col-md-2 col-4"><h5>新增粉丝数</h5><p class="fs-4">{{ data.new_followers or 0 }}</p></div><div class="col-md-2 col-4"><h5>成交粉丝占比</h5><p class="fs-4">{{ data.follower_order_ratio or 0 }}%</p></div><div class="col-md-2 col-4"><h5>累计观看人数</h5><p class="fs-4">{{ data.vv or 0 }}</p></div><div class="col-md-2 col-4"><h5>平均在线人数</h5><p class="fs-4">{{ data.avg_online_users or 0 }}</p></div><div class="col-md-2 col-4"><h5>人均观看时长</h5><p class="fs-4">{{ (data.avg_watch_time_seconds // 60)|int }}分 {{ data.avg_watch_time_seconds % 60 }}秒</p></div><div class="col-md-2 col-4"><h5>点击-成交转化率</h5><p class="fs-4">{{ data.click_to_order_ratio or 0 }}%</p></div><div class="col-md-2 col-4"><h5>观看-成交率</h5><p class="fs-4">{{ data.view_to_order_ratio or 0 }}%</p></div><div class="col-md-2 col-4"><h5>曝光-观看率</h5><p class="fs-4">{{ data.expose_to_view_ratio or 0 }}%</p></div></div></div>
+</div>
+
+<!-- 图表布局部分 (保持不变) -->
+<div class="card">
+    <div class="card-header"><h4>复盘图表</h4></div>
+    <div class="card-body">
+        {% if data.charts %}
+            <div class="row mb-4"><div class="col-12">{% if 'overall_trend_chart' in data.charts %}<h5>综合趋势图</h5><a href="{{ url_for('static', filename=data.charts['overall_trend_chart']) }}" target="_blank" title="点击查看大图"><img src="{{ url_for('static', filename=data.charts['overall_trend_chart']) }}" class="img-fluid border rounded" alt="综合趋势图"></a>{% endif %}</div></div>
+            <div class="row mb-4"><div class="col-12">{% if 'minute_traffic_flow_chart' in data.charts %}<h5>分钟级流量结构</h5><a href="{{ url_for('static', filename=data.charts['minute_traffic_flow_chart']) }}" target="_blank" title="点击查看大图"><img src="{{ url_for('static', filename=data.charts['minute_traffic_flow_chart']) }}" class="img-fluid border rounded" alt="分钟级流量结构"></a>{% endif %}</div></div>
+            <div class="row mb-4"><div class="col-md-6">{% if 'live_users_trend_chart' in data.charts %}<h5>人气趋势</h5><a href="{{ url_for('static', filename=data.charts['live_users_trend_chart']) }}" target="_blank" title="点击查看大图"><img src="{{ url_for('static', filename=data.charts['live_users_trend_chart']) }}" class="img-fluid border rounded" alt="人气趋势"></a>{% endif %}</div><div class="col-md-6">{% if 'traffic_source_chart' in data.charts %}<h5>流量来源</h5><a href="{{ url_for('static', filename=data.charts['traffic_source_chart']) }}" target="_blank" title="点击查看大图"><img src="{{ url_for('static', filename=data.charts['traffic_source_chart']) }}" class="img-fluid border rounded" alt="流量来源"></a>{% endif %}</div></div>
+            <div class="row"><div class="col-12">{% if 'user_profile_chart' in data.charts %}<h5>人群画像</h5><a href="{{ url_for('static', filename=data.charts['user_profile_chart']) }}" target="_blank" title="点击查看大图"><img src="{{ url_for('static', filename=data.charts['user_profile_chart']) }}" class="img-fluid border rounded" alt="人群画像"></a>{% endif %}</div></div>
+        {% else %}
+            <p class="text-muted">暂无图表。请检查图片是否已上传，并确保 `a_ocr_config.py` 文件中已正确配置 `chart_crops` 区域。</p>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning">没有找到 {{ date_str or "任何" }} 的数据。请先 <a href="{{ url_for('upload') }}">上传数据</a>。</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<!-- 日历的 JS 代码 (保持不变) -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr("#date-picker", {
+        locale: "zh", dateFormat: "Y-m-d", defaultDate: "{{ date_str or 'today' }}",
+        onChange: function(selectedDates, dateStr, instance) { if (dateStr) { window.location.href = "{{ url_for('daily_review') }}?date=" + dateStr; }},
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
+            const datesWithData = {{ all_dates|tojson }};
+            const year = dayElem.dateObj.getFullYear();
+            const month = String(dayElem.dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dayElem.dateObj.getDate()).padStart(2, '0');
+            const currentDateStr = `${year}-${month}-${day}`;
+            if (datesWithData.includes(currentDateStr)) { dayElem.innerHTML += "<span class='data-dot'></span>"; }
+        }
+    });
+});
+</script>
+{% endblock %}

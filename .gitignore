@@ -1,0 +1,10 @@
+# .gitignore
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+uploads/
+instance/
+# 不要上传 sqlite 数据库文件，我们会在后面手动处理
+# livestream_reporter_final.db 

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}抖音直播复盘助手{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 引入 Flatpickr 日历库的 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        /* 为有数据的日期下方的小蓝点定义样式 */
+        .data-dot {
+            width: 5px;
+            height: 5px;
+            background-color: #0d6efd; /* Bootstrap primary blue */
+            border-radius: 50%;
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <!-- Left Sidebar -->
+    <div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 260px; height: 100vh; position: fixed;">
+        <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+            <span class="fs-4">直播复盘助手</span>
+        </a>
+        <hr>
+        <ul class="nav nav-pills flex-column mb-auto">
+            <li class="nav-item"><a href="{{ url_for('daily_review') }}" class="nav-link text-white {% if request.endpoint == 'daily_review' %}active{% endif %}">每日数据复盘</a></li>
+            <li><a href="{{ url_for('historical_trends') }}" class="nav-link text-white {% if request.endpoint == 'historical_trends' %}active{% endif %}">历史数据趋势</a></li>
+            <li><a href="{{ url_for('upload') }}" class="nav-link text-white {% if request.endpoint == 'upload' %}active{% endif %}">直播数据上传</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-grow-1 p-4" style="margin-left: 260px; overflow-y: auto; height: 100vh;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- 引入 Flatpickr 日历库的 JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- 引入 Flatpickr 的中文语言包 -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
