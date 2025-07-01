@@ -1,4 +1,4 @@
-# app.py (最终云端部署版本 - 带启动时自动初始化功能)
+# app.py (最终修复版 - 修复了初始化逻辑)
 
 import os
 import json
@@ -25,9 +25,6 @@ import boto3
 from botocore.exceptions import NoCredentialsError
 
 from a_ocr_config import LLM_CONFIG, JSON_PROMPT, IMAGE_1_CONFIG, IMAGE_2_CONFIG, IMAGE_3_CONFIG, IMAGE_4_CONFIG, HISTORICAL_METRICS
-
-# --- 调试开关 ---
-DEBUG_MODE_SKIP_OCR = False
 
 # --- App & DB & LoginManager 初始化 ---
 app = Flask(__name__)
@@ -58,6 +55,7 @@ try:
 except Exception as e:
     print(f"!!! 严重错误：初始化 OpenAI 客户端失败: {e}"); client = None
 
+# ... (所有模型定义、辅助函数、路由函数都保持不变) ...
 # --- 数据库模型 (保持不变) ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -211,50 +209,45 @@ def daily_review():
 @app.route('/historical_trends')
 @login_required
 def historical_trends():
-    all_data = LiveData.query.order_by(LiveData.live_date.asc(), Live_start_time.asc()).all()
+    all_data = LiveData.query.order_by(LiveData.live_date.asc(), LiveData.live_start_time.asc()).all()
     raw_info_list = [{'date': d.live_date.strftime('%Y-%m-%d'), 'time': d.live_start_time} for d in all_data]
     chart_data = {'labels': [f'{d.live_date.strftime("%m-%d")} {d.live_start_time}' for d in all_data], 'raw_info': raw_info_list}
     for metric_key in HISTORICAL_METRICS.keys(): chart_data[metric_key] = [getattr(d, metric_key, 0) for d in all_data]
     return render_template('historical_trends.html', chart_data=chart_data, metrics=HISTORICAL_METRICS)
 
-# --- 【核心修改】启动时自动初始化数据库的函数 ---
-def initialize_database():
-    with app.app_context():
-        # 使用 SQLAlchemy 的 inspect 功能来检查 'user' 表是否存在
-        inspector = sa_inspect(db.engine)
-        if not inspector.has_table(User.__tablename__):
-            print("数据库或 User 表不存在，正在创建所有表...")
-            db.create_all()
-            print("数据库表创建完毕。")
+# --- 【核心修改】将初始化逻辑移到全局作用域 ---
+# 这个 with app.app_context() 块内的代码，在应用被 Gunicorn 导入时就会执行。
+with app.app_context():
+    # 使用 SQLAlchemy 的 inspect 功能来检查 'user' 表是否存在
+    inspector = sa_inspect(db.engine)
+    if not inspector.has_table(User.__tablename__):
+        print("数据库或 User 表不存在，正在创建所有表...")
+        db.create_all()
+        print("数据库表创建完毕。")
 
-            # 从环境变量中获取管理员信息，如果不存在则使用默认值
-            admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
-            admin_password = os.environ.get('ADMIN_PASSWORD', 'default_password_123')
-            
-            # 检查管理员用户是否已存在 (理论上第一次肯定不存在)
-            admin_user = User.query.filter_by(username=admin_username).first()
-            if not admin_user:
-                print(f"创建初始管理员用户: {admin_username}...")
-                new_admin = User(
-                    username=admin_username,
-                    password_hash=generate_password_hash(admin_password, method='pbkdf2:sha256'),
-                    role='admin'
-                )
-                db.session.add(new_admin)
-                db.session.commit()
-                print(f"管理员 '{admin_username}' 创建成功。")
-            else:
-                 print(f"管理员用户 '{admin_username}' 已存在，跳过创建。")
+        # 从环境变量中获取管理员信息，如果不存在则使用默认值
+        admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+        admin_password = os.environ.get('ADMIN_PASSWORD', 'default_password_123')
+        
+        # 检查管理员用户是否已存在 (理论上第一次肯定不存在)
+        admin_user = User.query.filter_by(username=admin_username).first()
+        if not admin_user:
+            print(f"创建初始管理员用户: {admin_username}...")
+            new_admin = User(
+                username=admin_username,
+                password_hash=generate_password_hash(admin_password, method='pbkdf2:sha256'),
+                role='admin'
+            )
+            db.session.add(new_admin)
+            db.session.commit()
+            print(f"管理员 '{admin_username}' 创建成功。")
         else:
-            print("数据库表已存在，跳过初始化。")
+             print(f"管理员用户 '{admin_username}' 已存在，跳过创建。")
+    else:
+        print("数据库表已存在，跳过初始化。")
 
-# --- 应用程序启动入口 ---
+
+# --- 应用程序启动入口 (只用于本地开发) ---
 if __name__ == '__main__':
-    # 在应用启动时调用初始化函数
-    initialize_database()
-    
-    # 启动 Web 服务器
-    # 在生产环境(Render)，Gunicorn会直接调用app，不会运行这里的app.run
-    # 在本地开发环境，我们会运行这里的app.run
-    if not IS_PRODUCTION:
-        app.run(debug=True, host='0.0.0.0')
+    # 在本地开发时，我们不再需要在启动时调用初始化，因为全局代码块已经处理了
+    app.run(debug=True, host='0.0.0.0')
