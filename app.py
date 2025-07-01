@@ -8,6 +8,7 @@ import re
 import uuid  # 用于生成唯一文件名
 from datetime import datetime
 from functools import wraps
+from openai import OpenAI
 
 # Flask 和数据库相关
 from flask import Flask, render_template, request, redirect, url_for, flash
