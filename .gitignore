@@ -1,10 +1,20 @@
-# .gitignore
+venv/
 __pycache__/
 *.pyc
-.env
-venv/
-.venv/
+*.pyo
+*.pyd
+.Python
+env/
+*.egg-info/
+dist/
+build/
+.vscode/
+.idea/
+*.DS_Store
+
+# 忽略本地的SQLite数据库
+livestream_reporter_final.db
+
+# 忽略本地的上传和生成文件夹
 uploads/
-instance/
-# 不要上传 sqlite 数据库文件，我们会在后面手动处理
-# livestream_reporter_final.db 
+static/generated_charts/
