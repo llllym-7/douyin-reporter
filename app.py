@@ -9,6 +9,7 @@ import uuid  # 用于生成唯一文件名
 from datetime import datetime
 from functools import wraps
 from openai import OpenAI
+from flask_migrate import Migrate # <--- 新增导入
 
 # Flask 和数据库相关
 from flask import Flask, render_template, request, redirect, url_for, flash
@@ -62,6 +63,8 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db) # <--- 新增这行来初始化 Migrate
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login' 

@@ -1,24 +1,37 @@
-{% extends "base.html" %}
+{% extends "base_minimal.html" %}
 
 {% block title %}登录{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6 col-lg-4">
-        <div class="card">
-            <div class="card-body">
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5" style="margin-top: 10vh;">
+        {# 在这里单独添加消息提示块 #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
                 <h3 class="card-title text-center mb-4">用户登录</h3>
                 <form method="POST" action="{{ url_for('login') }}">
                     {{ form.hidden_tag() }}
                     <div class="mb-3">
                         {{ form.username.label(class="form-label") }}
-                        {{ form.username(class="form-control") }}
+                        {{ form.username(class="form-control", placeholder="请输入用户名") }}
                     </div>
                     <div class="mb-3">
                         {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control") }}
+                        {{ form.password(class="form-control", placeholder="请输入密码") }}
                     </div>
-                    <div class="d-grid">
+                    <div class="d-grid mt-4">
                        {{ form.submit(class="btn btn-primary") }}
                     </div>
                 </form>
@@ -26,8 +39,5 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
-{# 这个页面不需要额外的脚本 #}
 {% endblock %}
