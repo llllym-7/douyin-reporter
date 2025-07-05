@@ -38,12 +38,23 @@ IS_PRODUCTION = os.environ.get('RENDER', False)
 if IS_PRODUCTION:
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-that-should-be-set-in-env')
     db_url = os.environ.get('DATABASE_URL')
-    if db_url and db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    if db_url:
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
+        # 【核心修复】在这里添加 SSL 参数
+        # 检查 URL 中是否已经有查询参数
+        if '?' in db_url:
+            db_url += '&sslmode=require'
+        else:
+            db_url += '?sslmode=require'
+            
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
     app.config['SECRET_KEY'] = '5e67649ca7508d280ac840f20dc2982a2ad0443a64420488'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///livestream_reporter_final.db'
+
+
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
