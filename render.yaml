@@ -1,47 +1,76 @@
+# render.yaml (修复版)
+
 services:
-  # 1. Web Service (Flask/Gunicorn)
+  # 1. Redis Service (先定义，因为它被其他服务依赖)
+  - type: redis
+    name: douyin-reporter-redis
+    ipAllowList: [] # 允许 Render 内部服务访问
+    maxmemoryPolicy: "allkeys-lru"
+
+  # 2. Web Service (Flask/Gunicorn)
   - type: web
     name: douyin-reporter-web
     env: python
-    buildCommand: "./build.sh"
+    buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn app:app"
+    healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.4
+        value: "3.11.4"
       - key: SECRET_KEY
-        generateValue: true # 让 Render 自动生成一个
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: douyin-reporter-db
+          property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
-          name: douyin-reporter-redis # 必须和你创建的 Redis 服务名一致
+          name: douyin-reporter-redis
+          property: connectionString # 【核心修复】明确指定获取 connectionString
+      # --- 请在这里添加你的私密环境变量，并设置 sync: false ---
+      # 例如:
       - key: ADMIN_USERNAME
-        value: admin # 或者从 Secret File 读取
+        sync: false # 表示这个值只在 Render UI 上设置，不从 yaml 同步
       - key: ADMIN_PASSWORD
-        value: default_password_123 # 或者从 Secret File 读取
-      # 把你其他的环境变量也加在这里, 比如 SILICONFLOW_API_KEY
-
-  # 2. Redis Service (在第一步已经手动创建了，这里只是引用)
-  - type: redis
-    name: douyin-reporter-redis
-    ipAllowList: [] # 允许所有 Render 内部服务访问
-    maxmemoryPolicy: "allkeys-lru"
+        sync: false
+      - key: SILICONFLOW_API_KEY
+        sync: false
 
   # 3. Celery Worker Service
   - type: worker
     name: douyin-reporter-worker
     env: python
-    buildCommand: "./build.sh"
-    startCommand: "celery -A app.celery_app worker --loglevel=info"
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python run_worker.py" # 使用我们的启动脚本
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.4
-      - key: SECRET_KEY
+        value: "3.11.4"
+      - key: SECRET_KEY # 从 Web Service 同步密钥
         fromService:
           type: web
           name: douyin-reporter-web
+          property: envVar # 这里是获取环境变量，所以 property 是 envVar
           envVarKey: SECRET_KEY
-      - key: REDIS_URL
+      - key: DATABASE_URL # 也需要数据库连接
+        fromDatabase:
+          name: douyin-reporter-db
+          property: connectionString
+      - key: REDIS_URL # 从 Redis Service 同步 URL
         fromService:
           type: redis
           name: douyin-reporter-redis
-      # 确保 Worker 和 Web Service 有相同的环境变量
+          property: connectionString # 【核心修复】明确指定获取 connectionString
+      # --- Worker 也需要访问这些密钥 ---
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SILICONFLOW_API_KEY
+        sync: false
+
+# 定义数据库服务
+databases:
+  - name: douyin-reporter-db
+    databaseName: douyin_reporter_db
+    user: douyin_reporter_user
