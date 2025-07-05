@@ -1,5 +1,4 @@
 accelerate==1.8.1
-aiobotocore @ file:///C:/b/abs_a0zxrsvpwx/croot/aiobotocore_1714464454692/work
 aiohappyeyeballs @ file:///C:/b/abs_b505trsapr/croot/aiohappyeyeballs_1725434036096/work
 aiohttp @ file:///C:/b/abs_13j6efxjb7/croot/aiohttp_1725529348885/work
 aioitertools @ file:///tmp/build/80754af9/aioitertools_1607109665762/work
@@ -38,8 +37,8 @@ bleach @ file:///opt/conda/conda-bld/bleach_1641577558959/work
 blinker @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/blinker_1699474692786/work
 bokeh @ file:///C:/b/abs_b40zi4jp_s/croot/bokeh_1727914495891/work
 boltons @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/boltons_1699480450092/work
-boto3==1.39.0
-botocore==1.39.0
+boto3==1.39.3
+botocore==1.39.3
 Bottleneck @ file:///C:/b/abs_f7un855idq/croot/bottleneck_1709069969633/work
 Brotli @ file:///C:/b/abs_3d36mno480/croot/brotli-split_1714483178642/work
 cachetools @ file:///C:/b/abs_792zbtc0ua/croot/cachetools_1713977157919/work
