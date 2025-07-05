@@ -1,20 +1,12 @@
-venv/
-__pycache__/
+# .gitignore
+
+# Python
 *.pyc
-*.pyo
-*.pyd
-.Python
-env/
-*.egg-info/
-dist/
-build/
-.vscode/
-.idea/
-*.DS_Store
+__pycache__/
+venv/
+*.db
+*.sqlite3
 
-# 忽略本地的SQLite数据库
-livestream_reporter_final.db
-
-# 忽略本地的上传和生成文件夹
-uploads/
-static/generated_charts/
+# OS generated files
+.DS_Store
+Thumbs.db

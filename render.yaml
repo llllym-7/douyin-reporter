@@ -1,0 +1,47 @@
+services:
+  # 1. Web Service (Flask/Gunicorn)
+  - type: web
+    name: douyin-reporter-web
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: SECRET_KEY
+        generateValue: true # 让 Render 自动生成一个
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: douyin-reporter-redis # 必须和你创建的 Redis 服务名一致
+      - key: ADMIN_USERNAME
+        value: admin # 或者从 Secret File 读取
+      - key: ADMIN_PASSWORD
+        value: default_password_123 # 或者从 Secret File 读取
+      # 把你其他的环境变量也加在这里, 比如 SILICONFLOW_API_KEY
+
+  # 2. Redis Service (在第一步已经手动创建了，这里只是引用)
+  - type: redis
+    name: douyin-reporter-redis
+    ipAllowList: [] # 允许所有 Render 内部服务访问
+    maxmemoryPolicy: "allkeys-lru"
+
+  # 3. Celery Worker Service
+  - type: worker
+    name: douyin-reporter-worker
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "celery -A app.celery_app worker --loglevel=info"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: douyin-reporter-web
+          envVarKey: SECRET_KEY
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: douyin-reporter-redis
+      # 确保 Worker 和 Web Service 有相同的环境变量
