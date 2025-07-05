@@ -1,10 +1,10 @@
-# render.yaml (修复版)
+# render.yaml (最终修复版)
 
 services:
   # 1. Redis Service (先定义，因为它被其他服务依赖)
   - type: redis
     name: douyin-reporter-redis
-    ipAllowList: [] # 允许 Render 内部服务访问
+    ipAllowList: []
     maxmemoryPolicy: "allkeys-lru"
 
   # 2. Web Service (Flask/Gunicorn)
@@ -27,11 +27,10 @@ services:
         fromService:
           type: redis
           name: douyin-reporter-redis
-          property: connectionString # 【核心修复】明确指定获取 connectionString
-      # --- 请在这里添加你的私密环境变量，并设置 sync: false ---
-      # 例如:
+          property: connectionString
+      # --- 私密环境变量在这里声明，但值在 Render UI 上设置 ---
       - key: ADMIN_USERNAME
-        sync: false # 表示这个值只在 Render UI 上设置，不从 yaml 同步
+        sync: false
       - key: ADMIN_PASSWORD
         sync: false
       - key: SILICONFLOW_API_KEY
@@ -42,7 +41,7 @@ services:
     name: douyin-reporter-worker
     env: python
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "python run_worker.py" # 使用我们的启动脚本
+    startCommand: "python run_worker.py"
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.4"
@@ -50,8 +49,8 @@ services:
         fromService:
           type: web
           name: douyin-reporter-web
-          property: envVar # 这里是获取环境变量，所以 property 是 envVar
-          envVarKey: SECRET_KEY
+          # 【核心修复】删除了多余的 'property: envVar'
+          envVarKey: SECRET_KEY 
       - key: DATABASE_URL # 也需要数据库连接
         fromDatabase:
           name: douyin-reporter-db
@@ -60,7 +59,7 @@ services:
         fromService:
           type: redis
           name: douyin-reporter-redis
-          property: connectionString # 【核心修复】明确指定获取 connectionString
+          property: connectionString
       # --- Worker 也需要访问这些密钥 ---
       - key: ADMIN_USERNAME
         sync: false
@@ -72,5 +71,5 @@ services:
 # 定义数据库服务
 databases:
   - name: douyin-reporter-db
-    databaseName: douyin_reporter_db
+    databaseName: douyin_reporter_db # 数据库内部的名字
     user: douyin_reporter_user
