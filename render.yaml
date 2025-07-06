@@ -1,9 +1,10 @@
-# render.yaml (最终修复版)
+# render.yaml (最终修复版 - 指定免费套餐)
 
 services:
-  # 1. Redis Service (先定义，因为它被其他服务依赖)
+  # 1. Redis Service
   - type: redis
     name: douyin-reporter-redis
+    plan: free # 【核心修复】明确指定使用免费套餐
     ipAllowList: []
     maxmemoryPolicy: "allkeys-lru"
 
@@ -11,6 +12,7 @@ services:
   - type: web
     name: douyin-reporter-web
     env: python
+    plan: free # 【核心修复】明确指定使用免费套餐
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn app:app"
     healthCheckPath: /
@@ -40,22 +42,22 @@ services:
   - type: worker
     name: douyin-reporter-worker
     env: python
+    plan: free # 【核心修复】明确指定使用免费套餐
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python run_worker.py"
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.4"
-      - key: SECRET_KEY # 从 Web Service 同步密钥
+      - key: SECRET_KEY
         fromService:
           type: web
           name: douyin-reporter-web
-          # 【核心修复】删除了多余的 'property: envVar'
-          envVarKey: SECRET_KEY 
-      - key: DATABASE_URL # 也需要数据库连接
+          envVarKey: SECRET_KEY
+      - key: DATABASE_URL
         fromDatabase:
           name: douyin-reporter-db
           property: connectionString
-      - key: REDIS_URL # 从 Redis Service 同步 URL
+      - key: REDIS_URL
         fromService:
           type: redis
           name: douyin-reporter-redis
@@ -71,5 +73,6 @@ services:
 # 定义数据库服务
 databases:
   - name: douyin-reporter-db
-    databaseName: douyin_reporter_db # 数据库内部的名字
+    plan: free # 【核心修复】明确指定使用免费套餐
+    databaseName: douyin_reporter_db
     user: douyin_reporter_user
