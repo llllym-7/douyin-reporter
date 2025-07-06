@@ -1,20 +1,14 @@
-# render.yaml (最终修复版 - 指定免费套餐)
+# render.yaml (最终免费版 - 使用 honcho)
 
 services:
-  # 1. Redis Service
-  - type: redis
-    name: douyin-reporter-redis
-    plan: free # 【核心修复】明确指定使用免费套餐
-    ipAllowList: []
-    maxmemoryPolicy: "allkeys-lru"
-
-  # 2. Web Service (Flask/Gunicorn)
+  # 1. Web Service (现在它也负责运行 Worker)
   - type: web
-    name: douyin-reporter-web
+    name: douyin-reporter
     env: python
-    plan: free # 【核心修复】明确指定使用免费套餐
+    plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn app:app"
+    # 【核心修改】启动命令现在使用 honcho
+    startCommand: "honcho start" 
     healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
@@ -30,7 +24,7 @@ services:
           type: redis
           name: douyin-reporter-redis
           property: connectionString
-      # --- 私密环境变量在这里声明，但值在 Render UI 上设置 ---
+      # --- 私密环境变量在这里声明 ---
       - key: ADMIN_USERNAME
         sync: false
       - key: ADMIN_PASSWORD
@@ -38,41 +32,12 @@ services:
       - key: SILICONFLOW_API_KEY
         sync: false
 
-  # 3. Celery Worker Service
-  - type: worker
-    name: douyin-reporter-worker
-    env: python
-    plan: free # 【核心修复】明确指定使用免费套餐
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python run_worker.py"
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.11.4"
-      - key: SECRET_KEY
-        fromService:
-          type: web
-          name: douyin-reporter-web
-          envVarKey: SECRET_KEY
-      - key: DATABASE_URL
-        fromDatabase:
-          name: douyin-reporter-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: douyin-reporter-redis
-          property: connectionString
-      # --- Worker 也需要访问这些密钥 ---
-      - key: ADMIN_USERNAME
-        sync: false
-      - key: ADMIN_PASSWORD
-        sync: false
-      - key: SILICONFLOW_API_KEY
-        sync: false
+  # 2. Redis Service
+  - type: redis
+    name: douyin-reporter-redis
+    plan: free
 
 # 定义数据库服务
 databases:
   - name: douyin-reporter-db
-    plan: free # 【核心修复】明确指定使用免费套餐
-    databaseName: douyin_reporter_db
-    user: douyin_reporter_user
+    plan: free
