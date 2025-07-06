@@ -1,4 +1,4 @@
-# render.yaml (最终免费版 - 使用 honcho)
+# render.yaml (最终免费版 - 修复 IP allow list)
 
 services:
   # 1. Web Service (现在它也负责运行 Worker)
@@ -7,8 +7,7 @@ services:
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    # 【核心修改】启动命令现在使用 honcho
-    startCommand: "honcho start" 
+    startCommand: "honcho start"
     healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
@@ -36,6 +35,7 @@ services:
   - type: redis
     name: douyin-reporter-redis
     plan: free
+    ipAllowList: [] # 【核心修复】重新加上 IP 允许列表
 
 # 定义数据库服务
 databases:
